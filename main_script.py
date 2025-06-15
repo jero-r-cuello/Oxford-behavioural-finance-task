@@ -9,29 +9,31 @@ The analysis is organized into sequential sections.
 
 Sections included:
 ------------------
-0. Pre-processing
+0. Pre-processing (green colored text)
     - Display dataset shape, column names, and head
     - Assess value distributions per column
     - Check for missing values and data types
     - Describe numerical and categorical columns
     - Detect duplicates and convert ID columns to string
 
-1. Univariate Analysis
+1. Univariate Analysis (blue colored text)
     - Identify numerical and categorical variables
     - Plot distributions of numerical variables (histograms, zoomed view for asset_value)
     - Plot frequency counts for categorical variables
     - Parse and analyze temporal column ('created')
 
-2. Bivariate Analysis
+2. Bivariate Analysis (magenta colored text)
     - Generate scatter plots between numerical variables (pairplot)
     - Visualize numerical vs. categorical interactions (violin + strip plots)
     - Explore categorical relationships via normalized crosstabs (stacked barplot)
     - Compute and display correlation heatmap for numerical variables
 
-Special Case Analysis (included in Pre-processing):
+Special Case Analysis (red colored text):
 ----------------------
 - Identify the individual with the highest total asset value in GBP only
 - Retrieve and report the corresponding risk tolerance score
+- Test hypothesis on conversion rates of asset values to GBP
+- Visualize the distribution of converted asset values
 
 Usage:
 ------
@@ -201,10 +203,57 @@ plt.tight_layout()
 plt.show()
 
 # Plotting correlation heatmap for numerical features
+print(colored('\nPlotting correlation heatmap for numerical features:', 'magenta'))
 df_corr = df[num_cols].corr()
 
 plt.figure(figsize=(8, 6))
 sns.heatmap(df_corr, annot=True, cmap='coolwarm', center=0)
 plt.title('Correlation Heatmap of Numerical Features')
+plt.tight_layout()
+plt.show()
+
+
+### BONUS: TESTING CONVERSION RATES HYPOTHESIS
+# This section tests the hypothesis that conversing asset values to GBP will yield a less disperse distribution of values.
+
+# Conversion rates for different currencies to GBP
+conversion_rates = {
+    'GBP': 1.00,
+    'USD': 0.79,
+    'EUR': 0.85,
+    'JPY': 0.0058,
+    'AUD': 0.52
+}
+
+# Convert asset_value to GBP using the conversion rates
+df['asset_value_gbp'] = df.apply(lambda row: row['asset_value'] * conversion_rates.get(row['asset_currency'], 1.0), axis=1)
+
+# Plotting the distribution of asset_value_gbp as a histogram
+print(colored('\nPlotting distribution of asset_value converted to GBP:', 'red'))
+plt.figure(figsize=(10, 5))
+sns.histplot(df['asset_value_gbp'], bins=50, kde=True)
+plt.title('Distribution of asset_value converted to GBP')
+plt.xlabel('Asset Value (GBP)')
+plt.ylabel('Frecuencia')
+plt.tight_layout()
+plt.show()
+
+# Plotting asset_value_gbp against asset_currency as violin plots
+print(colored('\nPlotting asset_value_gbp vs asset_currency:', 'red'))
+plt.figure(figsize=(10, 4))
+sns.violinplot(x='asset_currency', y='asset_value_gbp', data=df, inner='box', palette='Set2')  
+sns.stripplot(x='asset_currency',y='asset_value_gbp', data=df, color='k', alpha=0.3, jitter=True, size=2)
+plt.title(f'asset_value_gbp vs asset_currency')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Adding 'asset_value_gbp' to the numerical columns for pairplot
+print(colored('\nPlotting scatter plots between numerical features including asset_value_gbp:', 'red'))
+num_cols.append('asset_value_gbp')
+
+# Plotting scatter plots between numerical features including asset_value_gbp
+sns.pairplot(df[num_cols], corner=True)
+plt.suptitle('Scatter plots between numerical features (asset_value_gbp added)', y=1.02)
 plt.tight_layout()
 plt.show()
